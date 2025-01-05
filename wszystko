@@ -1,1 +1,171 @@
+<!DOCTYPE html>
+<html lang="pl-PL">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Statystki LaFuria</title>
+</head>
+<body>
+    <header>
+        <img src="furialg.png" alt="LOGOLAFURIA">
+        <h1>Strona statystyk zawodników La Furia Orlen</h1>
+    </header>
+    <section id="pokazanieSTAT">
+        <table style="margin-left: auto; margin-right: auto;">
+            <tr>
+	            <td colspan="2">Imię i Nazwisko</td>
+            <td>Mecze</td>
+            <td>Gole</td>
+            <td>Asysty</td>
+            <td>Żółte kartki</td>
+            <td>Czerwone kartki</td>
+        </tr>
+        <?php
+        $polaczenie=mysqli_connect("localhost","root","","statystyki");
+        $kw="SELECT imie,nazwisko,mecze,gole,asysty,zolte_kartki,czerwone_kartki FROM stats;";
+        $wynik=mysqli_query($polaczenie, $kw);
+        while ($row=mysqli_fetch_array($wynik)){
+            echo "<tr>";
+            echo "<th>" . $row['imie'] . "</th>";
+            echo "<th>" . $row['nazwisko'] . "</th>";
+            echo "<td>" . $row['mecze'] . "</td>";
+            echo "<td>" . $row['gole'] . "</td>";
+            echo "<td>" . $row['asysty'] . "</td>";
+            echo "<td>" . $row['zolte_kartki'] . "</td>";
+            echo "<td>" . $row['czerwone_kartki'] . "</td>";
+            echo "</tr>";
+        };
 
+        mysqli_close($polaczenie);
+        ?>
+        </table>
+    </section>
+    <section id="dodanieSTAT"> 
+    <hr>
+    <h2>Dodaj statystyki</h2>
+    <?php
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "statystyki";
+
+    $conn = new mysqli($servername, $username, $password, $dbname);
+    if ($conn->connect_error) {
+        die("Błąd połączenia: " . $conn->connect_error);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dodaj'])) {
+        $imie = $_POST['imie'];
+        $nazwisko = $_POST['nazwisko'];
+        $mecze = $_POST['mecze'];
+        $gole = $_POST['gole'];
+        $asysty = $_POST['asysty'];
+        $zolte_kartki = $_POST['zolte_kartki'];
+        $czerwone_kartki = $_POST['czerwone_kartki'];
+
+        $sql = "INSERT INTO stats (imie, nazwisko, mecze, gole, asysty, zolte_kartki, czerwone_kartki)
+                VALUES ('$imie', '$nazwisko', $mecze, $gole, $asysty, $zolte_kartki, $czerwone_kartki)";
+
+        if ($conn->query($sql) === TRUE) {
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        } else {
+            echo "<p>Błąd: " . $conn->error . "</p>";
+        }
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktualizuj'])) {
+        $id = $_POST['id'];
+        $dodatkowe_mecze = $_POST['dodatkowe_mecze'];
+        $dodatkowe_gole = $_POST['dodatkowe_gole'];
+        $dodatkowe_asysty = $_POST['dodatkowe_asysty'];
+        $dodatkowe_zolte_kartki = $_POST['dodatkowe_zolte_kartki'];
+        $dodatkowe_czerwone_kartki = $_POST['dodatkowe_czerwone_kartki'];
+
+        $sql = "UPDATE stats 
+                SET mecze = mecze + $dodatkowe_mecze, 
+                    gole = gole + $dodatkowe_gole, 
+                    asysty = asysty + $dodatkowe_asysty, 
+                    zolte_kartki = zolte_kartki + $dodatkowe_zolte_kartki, 
+                    czerwone_kartki = czerwone_kartki + $dodatkowe_czerwone_kartki
+                WHERE id = $id";
+
+        if ($conn->query($sql) === TRUE) {
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        } else {
+            echo "<p>Błąd: " . $conn->error . "</p>";
+        }
+    }
+
+    $result = $conn->query("SELECT id, imie, nazwisko FROM stats");
+
+    $conn->close();
+    ?>
+
+    <form method="POST">
+        <h3>Dodaj nowy rekord</h3>
+        <label for="imie">Imię:</label><br>
+        <input type="text" id="imie" name="imie" required><br><br>
+
+        <label for="nazwisko">Nazwisko:</label><br>
+        <input type="text" id="nazwisko" name="nazwisko" required><br><br>
+
+        <label for="mecze">Mecze:</label><br>
+        <input type="number" id="mecze" name="mecze" required><br><br>
+
+        <label for="gole">Gole:</label><br>
+        <input type="number" id="gole" name="gole" required><br><br>
+
+        <label for="asysty">Asysty:</label><br>
+        <input type="number" id="asysty" name="asysty" required><br><br>
+
+        <label for="zolte_kartki">Żółte kartki:</label><br>
+        <input type="number" id="zolte_kartki" name="zolte_kartki" required><br><br>
+
+        <label for="czerwone_kartki">Czerwone kartki:</label><br>
+        <input type="number" id="czerwone_kartki" name="czerwone_kartki" required><br><br>
+
+        <button type="submit" name="dodaj">Dodaj dane</button>
+    </form>
+
+    <hr>
+
+    <form method="POST">
+        <h3>Aktualizuj istniejące statystyki</h3>
+        <label for="id">Wybierz zawodnika:</label><br>
+        <select id="id" name="id" required>
+            <option value="">-- Wybierz --</option>
+            <?php
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    echo "<option value='" . $row['id'] . "'>" . $row['imie'] . " " . $row['nazwisko'] . "</option>";
+                }
+            }
+            ?>
+        </select><br><br>
+
+        <label for="dodatkowe_mecze">Dodaj mecze:</label><br>
+        <input type="number" id="dodatkowe_mecze" name="dodatkowe_mecze" required><br><br>
+
+        <label for="dodatkowe_gole">Dodaj gole:</label><br>
+        <input type="number" id="dodatkowe_gole" name="dodatkowe_gole" required><br><br>
+
+        <label for="dodatkowe_asysty">Dodaj asysty:</label><br>
+        <input type="number" id="dodatkowe_asysty" name="dodatkowe_asysty" required><br><br>
+
+        <label for="dodatkowe_zolte_kartki">Dodaj żółte kartki:</label><br>
+        <input type="number" id="dodatkowe_zolte_kartki" name="dodatkowe_zolte_kartki" required><br><br>
+
+        <label for="dodatkowe_czerwone_kartki">Dodaj czerwone kartki:</label><br>
+        <input type="number" id="dodatkowe_czerwone_kartki" name="dodatkowe_czerwone_kartki" required><br><br>
+
+        <button type="submit" name="aktualizuj">Aktualizuj dane</button>
+    </form>
+</section>
+
+
+    <a href="druzyna.php">Statystki Drużynowe</a>
+</body>
+</html>
